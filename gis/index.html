@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCM Sensor Network - Live Map</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        /* Fullscreen Map */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; background: #f0f0f0; }
+
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            font-family: Arial, sans-serif;
+            border: 1px solid #ccc;
+        }
+        .info-panel h1 { margin: 0; font-size: 16px; color: #333; }
+        .info-panel p { margin: 5px 0 0; font-size: 12px; color: #666; font-weight: bold; }
+        
+        /* Popup Styling */
+        .leaflet-popup-content b { color: #2c3e50; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="info-panel">
+        <h1>UCM Sensor Network</h1>
+        <p>● Live Air Quality Data</p>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        window.addEventListener('load', function() {
+            // 1. Initialize Map
+            const map = L.map('map').setView([40.71825, -74.04865], 13);
+            let sensorLayer = null;
+
+            // 2. Base Map Layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // 4. Rendering Logic (Coloring)
+            function getMarkerOptions(pm2_5) {
+                let color = "green";
+                if (pm2_5 > 35) color = "red";
+                else if (pm2_5 > 12) color = "orange";
+
+                return {
+                    radius: 8,
+                    fillColor: color,
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                };
+            }
+
+            // 3. Data Loading Function
+            async function updateSensors() {
+                try {
+                    const response = await fetch(`http://192.168.1.236:5000/api/latest?t=${Date.now()}`);
+                    const data = await response.json();
+
+                    // Remove old layer before adding new
+                    if (sensorLayer) {
+                        map.removeLayer(sensorLayer);
+                    }
+
+                    // Create new GeoJSON layer with circleMarkers
+                    sensorLayer = L.geoJSON(data, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.circleMarker(latlng, getMarkerOptions(feature.properties.pm2_5));
+                        },
+                        onEachFeature: function (feature, layer) {
+                            const p = feature.properties;
+                            const popupContent = `
+                                <b>Node:</b> ${p.node}<br>
+                                <b>Label:</b> ${p.label}<hr>
+                                <div class="data-grid">
+                                    <span><b>PM2.5:</b> ${p.pm2_5}</span>
+                                    <span><b>PM10:</b> ${p.pm10}</span>
+                                    <span><b>PM1:</b> ${p.pm1}</span>
+                                    <span><b>PM4:</b> ${p.pm4}</span>
+                                    <span><b>VOC:</b> ${p.voc_index}</span>
+                                    <span><b>NOx:</b> ${p.nox_index || 'N/A'}</span>
+                                    <span><b>Temp:</b> ${p.temp}°C</span>
+                                    <span><b>RH:</b> ${p.rh}%</span>
+                                </div>
+                                <div style="font-size:9px; color:gray; margin-top:8px;">${p.timestamp}</div>
+                            `;
+                            layer.bindPopup(popupContent);
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds on first load or update
+                    if (data.features.length > 0) {
+                        map.fitBounds(sensorLayer.getBounds(), { padding: [20, 20] });
+                    }
+
+                } catch (error) {
+                    console.error("Error fetching UCM data:", error);
+                }
+            }
+
+            // Initial load
+            updateSensors();
+
+            // Reload every 10 seconds
+            setInterval(updateSensors, 10000);
+        });
+    </script>
+</body>
+</html>
