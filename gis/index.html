@@ -115,7 +115,7 @@
 
             async function updateSensors() {
                 try {
-                    const response = await fetch(`http://192.168.1.236:5000/api/latest?t=${Date.now()}`);
+                    const response = await fetch(`/api/latest?t=${Date.now()}`);
                     const data = await response.json();
 
                     if (sensorLayer) { map.removeLayer(sensorLayer); }

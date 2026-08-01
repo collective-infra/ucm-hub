@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCM Simulation - Manual Control</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; padding: 100px 20px 20px 20px; margin: 0; }
+        
+        /* Global Navigation Menu */
+        .nav-overlay {
+            position: absolute;
+            top: 20px;
+            left: 60px; 
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #ffffff;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid #007bff;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-btn:hover { background: #007bff; color: #fff; transform: translateY(-2px); }
+        .nav-btn.active { background: #007bff; color: white; border-color: #0056b3; }
+
+        /* Documentation / Console Style */
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-top: 0; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .code-block {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 5px solid #d9534f;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .step { font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-overlay">
+        <a href="index.html" class="nav-btn">🗺️ Live Map</a>
+        <a href="dashboard.html" class="nav-btn">📊 Dashboard</a>
+        <a href="neighborhoods.html" class="nav-btn">🏘️ Neighborhoods</a>
+        <a href="sim_controls.html" class="nav-btn active">🔥 Sim Ops</a>
+    </nav>
+
+    <div class="container">
+        <h1>Manual Simulation Operations</h1>
+        
+        <div class="note">
+            <strong>Current Mode:</strong> Manual SSH Trigger. <br>
+            The automated web-trigger is currently disabled to prevent API conflicts.
+        </div>
+
+        <p><span class="step">Step 1:</span> Open your terminal and SSH into the UCM-HUB.</p>
+        
+        <p><span class="step">Step 2:</span> Navigate to the project directory and activate the environment:</p>
+        <div class="code-block">
+            cd /opt/ucm-hub/gis/<br>
+            source venv/bin/activate
+        </div>
+
+        <p><span class="step">Step 3:</span> Run the 48-hour wildfire plume simulation:</p>
+        <div class="code-block">
+            python3 wildfire_sym.py
+        </div>
+
+        <p><span class="step">Step 4:</span> Monitor the progress.</p>
+        <p>The script will publish to MQTT every 2 seconds. You can switch to the <strong>Live Map</strong> or <strong>Dashboard</strong> tabs to see the data populate in real-time.</p>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="font-size: 12px; color: #999; text-align: center;">
+            UCM Project - Jersey City / NYC Microclimate Research
+        </p>
+    </div>
+
+</body>
+</html>

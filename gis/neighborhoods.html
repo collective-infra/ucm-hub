@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCM Neighborhood Monitoring</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 100px 20px 20px 20px; margin: 0; }
+        
+        .nav-overlay { position: absolute; top: 20px; left: 60px; z-index: 2000; display: flex; gap: 10px; }
+        .nav-btn { background: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; color: #333; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 2px solid #007bff; transition: 0.2s; }
+        .nav-btn:hover { background: #007bff; color: #fff; }
+        .nav-btn.active { background: #007bff; color: white; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+        .node-card { 
+            background: white; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            border-top: 10px solid #ccc; /* Thicker bar for color visibility */
+            transition: border-color 0.5s ease;
+        }
+        .mini-map { height: 140px; width: 100%; pointer-events: none; filter: grayscale(30%); }
+        
+        .info { padding: 20px; }
+        .label { font-weight: 800; font-size: 1.1em; color: #2c3e50; margin-bottom: 12px; display: block; }
+        
+        .data-table { width: 100%; font-size: 14px; border-collapse: collapse; }
+        .data-table tr { border-bottom: 1px solid #f0f0f0; }
+        .data-table td { padding: 8px 0; }
+        .data-table td:last-child { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-overlay">
+        <a href="index.html" class="nav-btn">🗺️ Live Map</a>
+        <a href="dashboard.html" class="nav-btn">📊 Dashboard</a>
+        <a href="neighborhoods.html" class="nav-btn active">🏘️ Neighborhoods</a>
+        <a href="sim_controls.html" class="nav-btn">🔥 Sim Ops</a>
+    </nav>
+
+    <div class="grid" id="node-grid"></div>
+
+<script>
+    const apiURL = 'http://192.168.1.236:5000/api/latest';
+    const markers = {}; 
+
+    // Threshold Logic - Returns hex color based on sensor type and value
+    function getColor(type, val) {
+        const thresholds = {
+            "pm25": [12, 35, 55, 150], 
+            "temp": [26, 31, 36, 40],  
+            "nox":  [40, 80, 150, 300] 
+        };
+        // Green, Yellow, Orange, Red, Purple
+        const colors = ["#28a745", "#ffc107", "#fd7e14", "#dc3545", "#721c24"];
+        const levels = thresholds[type] || [10, 50, 100, 200];
+        
+        const numericVal = parseFloat(val);
+
+        for (let i = 0; i < levels.length; i++) {
+            if (numericVal <= levels[i]) return colors[i];
+        }
+        return colors[4];
+    }
+
+    async function initGrid() {
+        try {
+            const response = await fetch(apiURL);
+            const data = await response.json();
+            const grid = document.getElementById('node-grid');
+
+            data.features.forEach(feature => {
+                const id = feature.properties.node;
+                const name = feature.properties.label || id;
+                const coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
+
+                const card = document.createElement('div');
+                card.className = 'node-card';
+                card.id = `card-${id}`;
+                card.innerHTML = `
+                    <div id="map-${id}" class="mini-map"></div>
+                    <div class="info">
+                        <span class="label">${name}</span>
+                        <table class="data-table" id="table-${id}"></table>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                const m = L.map(`map-${id}`, { zoomControl: false, attributionControl: false }).setView(coords, 14); 
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+                
+                markers[id] = L.circleMarker(coords, { 
+                    radius: 9, 
+                    fillColor: '#666', 
+                    color: '#000', 
+                    weight: 1, 
+                    fillOpacity: 0.9 
+                }).addTo(m);
+            });
+            updateData(); 
+        } catch (e) { console.error("Init Grid Error:", e); }
+    }
+
+    async function updateData() {
+        try {
+            const response = await fetch(`${apiURL}?t=${Date.now()}`);
+            const data = await response.json();
+
+            data.features.forEach(feature => {
+                const id = feature.properties.node;
+                const p = feature.properties;
+                const table = document.getElementById(`table-${id}`);
+                const card = document.getElementById(`card-${id}`);
+                
+                // Parsing values to ensure numeric comparison
+                const pmVal = parseFloat(p.pm25 || p.pm2_5 || 0);
+                const tempVal = parseFloat(p.temp || 0);
+                const noxVal = parseFloat(p.nox || p.nox_index || 0);
+
+                const fields = [
+                    { label: "PM2.5", val: pmVal, unit: "µg/m³", type: "pm25" },
+                    { label: "Temperature", val: tempVal, unit: "°C", type: "temp" },
+                    { label: "NOx", val: noxVal, unit: "ppb", type: "nox" }
+                ];
+
+                // Injecting Table Rows with Dynamic Colors
+                table.innerHTML = fields.map(f => {
+                    const statusColor = getColor(f.type, f.val);
+                    return `<tr>
+                                <td>${f.label}</td>
+                                <td style="color: ${statusColor} !important;">${f.val.toFixed(1)} ${f.unit}</td>
+                            </tr>`;
+                }).join('');
+
+                // Use PM2.5 as the primary driver for the card's status bar and map marker
+                const primaryColor = getColor("pm25", pmVal);
+                if (card) card.style.borderColor = primaryColor;
+                if (markers[id]) {
+                    markers[id].setStyle({ fillColor: primaryColor });
+                }
+            });
+        } catch (e) { console.error("Update Grid Error:", e); }
+    }
+
+    initGrid();
+    setInterval(updateData, 3000); 
+</script>
+</body>
+</html>
