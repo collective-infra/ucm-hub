@@ -6,7 +6,82 @@
   },
   "node-02": {
     "lat": 40.7128,
-    "lon": -74.0060,
+    "lon": -74.006,
     "label": "Courtyard"
+  },
+  "node-sim-01": {
+    "lat": 40.877,
+    "lon": -73.861,
+    "label": "Williamsbridge (BX)"
+  },
+  "node-sim-02": {
+    "lat": 40.854,
+    "lon": -73.888,
+    "label": "Belmont (BX)"
+  },
+  "node-sim-03": {
+    "lat": 40.843,
+    "lon": -73.884,
+    "label": "West Farms (BX)"
+  },
+  "node-sim-04": {
+    "lat": 40.837,
+    "lon": -73.929,
+    "label": "Highbridge (BX)"
+  },
+  "node-sim-05": {
+    "lat": 40.809,
+    "lon": -73.883,
+    "label": "Hunts Point (BX)"
+  },
+  "node-sim-06": {
+    "lat": 40.807,
+    "lon": -73.921,
+    "label": "Mott Haven (BX)"
+  },
+  "node-sim-07": {
+    "lat": 40.795,
+    "lon": -73.939,
+    "label": "East Harlem (MN)"
+  },
+  "node-sim-08": {
+    "lat": 40.812,
+    "lon": -73.944,
+    "label": "Central Harlem (MN)"
+  },
+  "node-sim-09": {
+    "lat": 40.772,
+    "lon": -73.921,
+    "label": "Astoria (QN)"
+  },
+  "node-sim-10": {
+    "lat": 40.748,
+    "lon": -73.948,
+    "label": "Long Island City (QN)"
+  },
+  "node-sim-11": {
+    "lat": 40.73,
+    "lon": -73.951,
+    "label": "Greenpoint (BK)"
+  },
+  "node-sim-12": {
+    "lat": 40.694,
+    "lon": -73.919,
+    "label": "Bushwick (BK)"
+  },
+  "node-sim-13": {
+    "lat": 40.683,
+    "lon": -73.941,
+    "label": "Bed-Stuy (BK)"
+  },
+  "node-sim-14": {
+    "lat": 40.665,
+    "lon": -73.912,
+    "label": "Brownsville (BK)"
+  },
+  "node-sim-15": {
+    "lat": 40.645,
+    "lon": -74.012,
+    "label": "Sunset Park (BK)"
   }
 }

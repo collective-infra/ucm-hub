@@ -9,80 +9,117 @@
     
     <style>
         /* Fullscreen Map */
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
-        #map { height: 100vh; width: 100vw; background: #f0f0f0; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #222; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+        /* Navigation Menu Overlay */
+        .nav-overlay {
+            position: absolute;
+            top: 20px;
+            left: 60px; 
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #ffffff;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid #007bff;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover { background: #007bff; color: #fff; transform: translateY(-2px); }
+        .nav-btn.active { background: #007bff; color: white; border-color: #0056b3; }
 
         /* Info Panel */
         .info-panel {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 18px;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             font-family: Arial, sans-serif;
             border: 1px solid #ccc;
         }
-        .info-panel h1 { margin: 0; font-size: 16px; color: #333; }
-        .info-panel p { margin: 5px 0 0; font-size: 12px; color: #666; font-weight: bold; }
+        .info-panel h1 { margin: 0; font-size: 18px; color: #333; }
+        .info-panel p { margin: 5px 0 0; font-size: 12px; color: #d9534f; font-weight: bold; }
         
         /* Popup Styling */
+        .data-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 5px; 
+            font-size: 11px; 
+            margin-top: 5px; 
+            padding-top: 5px;
+            border-top: 1px solid #eee;
+        }
         .leaflet-popup-content b { color: #2c3e50; }
-        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="map"></div>
+    <nav class="nav-overlay">
+        <a href="index.html" class="nav-btn active">🗺️ Live Map</a>
+        <a href="dashboard.html" class="nav-btn">📊 Dashboard</a>
+        <a href="neighborhoods.html" class="nav-btn">🏘️ Neighborhoods</a>
+        <a href="sim_controls.html" class="nav-btn">🔥 Sim Controls</a>
+    </nav>
 
     <div class="info-panel">
         <h1>UCM Sensor Network</h1>
-        <p>● Live Air Quality Data</p>
+        <p>● Live Air Quality Stream</p>
     </div>
+
+    <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         window.addEventListener('load', function() {
-            // 1. Initialize Map
             const map = L.map('map').setView([40.71825, -74.04865], 13);
             let sensorLayer = null;
+            let initialFitDone = false;
 
-            // 2. Base Map Layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            // 4. Rendering Logic (Coloring)
             function getMarkerOptions(pm2_5) {
-                let color = "green";
-                if (pm2_5 > 35) color = "red";
-                else if (pm2_5 > 12) color = "orange";
+                let color = "#00e400";
+                if (pm2_5 > 150.4) color = "#8f3f97";
+                else if (pm2_5 > 55.4) color = "#ff0000";
+                else if (pm2_5 > 35.4) color = "#ff7e00";
+                else if (pm2_5 > 12.0) color = "#ffff00";
 
                 return {
-                    radius: 8,
+                    radius: 9,
                     fillColor: color,
-                    color: "#000",
+                    color: "#333",
                     weight: 1,
                     opacity: 1,
                     fillOpacity: 0.8
                 };
             }
 
-            // 3. Data Loading Function
             async function updateSensors() {
                 try {
                     const response = await fetch(`http://192.168.1.236:5000/api/latest?t=${Date.now()}`);
                     const data = await response.json();
 
-                    // Remove old layer before adding new
-                    if (sensorLayer) {
-                        map.removeLayer(sensorLayer);
-                    }
+                    if (sensorLayer) { map.removeLayer(sensorLayer); }
 
-                    // Create new GeoJSON layer with circleMarkers
                     sensorLayer = L.geoJSON(data, {
                         pointToLayer: function (feature, latlng) {
                             return L.circleMarker(latlng, getMarkerOptions(feature.properties.pm2_5));
@@ -90,39 +127,39 @@
                         onEachFeature: function (feature, layer) {
                             const p = feature.properties;
                             const popupContent = `
-                                <b>Node:</b> ${p.node}<br>
-                                <b>Label:</b> ${p.label}<hr>
-                                <div class="data-grid">
-                                    <span><b>PM2.5:</b> ${p.pm2_5}</span>
-                                    <span><b>PM10:</b> ${p.pm10}</span>
-                                    <span><b>PM1:</b> ${p.pm1}</span>
-                                    <span><b>PM4:</b> ${p.pm4}</span>
-                                    <span><b>VOC:</b> ${p.voc_index}</span>
-                                    <span><b>NOx:</b> ${p.nox_index || 'N/A'}</span>
-                                    <span><b>Temp:</b> ${p.temp}°C</span>
-                                    <span><b>RH:</b> ${p.rh}%</span>
+                                <div style="min-width:180px;">
+                                    <b>Node:</b> ${p.node}<br>
+                                    <b>Label:</b> ${p.label || 'Sensor'}<hr>
+                                    <div class="data-grid">
+                                        <span><b>PM2.5:</b> ${p.pm2_5 || 0}</span>
+                                        <span><b>PM10:</b> ${p.pm10 || 0}</span>
+                                        <span><b>PM1:</b> ${p.pm1 || 0}</span>
+                                        <span><b>PM4:</b> ${p.pm4 || 0}</span>
+                                        <span><b>VOC:</b> ${p.voc_index || 0}</span>
+                                        <span><b>NOx:</b> ${p.nox_index || 'N/A'}</span>
+                                        <span><b>Temp:</b> ${p.temp || 0}°C</span>
+                                        <span><b>RH:</b> ${p.rh || 0}%</span>
+                                    </div>
+                                    <div style="font-size:9px; color:gray; margin-top:8px;">
+                                        Type: ${p.node.includes('sim') ? 'Simulated Plume' : 'Physical Hardware'}
+                                    </div>
                                 </div>
-                                <div style="font-size:9px; color:gray; margin-top:8px;">${p.timestamp}</div>
                             `;
                             layer.bindPopup(popupContent);
                         }
                     }).addTo(map);
 
-                    // Fit map to bounds on first load or update
-                    if (data.features.length > 0) {
-                        map.fitBounds(sensorLayer.getBounds(), { padding: [20, 20] });
+                    if (data.features.length > 0 && !initialFitDone) {
+                        map.fitBounds(sensorLayer.getBounds(), { padding: [40, 40] });
+                        initialFitDone = true;
                     }
-
                 } catch (error) {
-                    console.error("Error fetching UCM data:", error);
+                    console.error("UCM Data Fetch Error:", error);
                 }
             }
 
-            // Initial load
             updateSensors();
-
-            // Reload every 10 seconds
-            setInterval(updateSensors, 10000);
+            setInterval(updateSensors, 2000);
         });
     </script>
 </body>
