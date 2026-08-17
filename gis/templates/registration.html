@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>UCM Node Registration</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            margin-top: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 90px;
+        }
+
+        .readonly {
+            background: #eee;
+        }
+
+        .node-header {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #dff0d8;
+            border: 1px solid #b8d8a8;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 400px;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .map-help {
+            margin-top: 10px;
+            color: #555;
+        }
+
+        #location_status {
+            margin-left: 10px;
+            font-weight: normal;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>UCM Node Registration</h1>
+
+
+{% if node %}
+
+<div class="node-header">
+    Node: <strong>{{ node_id }}</strong>
+</div>
+
+
+{% if saved %}
+
+<div class="success">
+    Registration saved successfully.
+</div>
+
+{% endif %}
+
+
+<form method="POST">
+
+
+    <!-- ========================================= -->
+    <!-- NODE / HARDWARE -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Node / Hardware</h2>
+
+        <div class="grid">
+
+            <div>
+                <label>Node ID</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('node_id', node_id) }}"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label>MAC Address</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('mac_address', '') }}"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label>Platform</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('hardware', {}).get('platform', '') }}"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label>Sensor</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('hardware', {}).get('sensor', '') }}"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label>Firmware Version</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('hardware', {}).get('firmware_version', '') }}"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label>Test Result</label>
+
+                <input
+                    class="readonly"
+                    value="{{ node.get('hardware', {}).get('test_result', '') }}"
+                    readonly
+                >
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- SITE -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Site Information</h2>
+
+        <div class="grid">
+
+            <div>
+                <label>Organization</label>
+
+                <input
+                    name="organization"
+                    value="{{ node.get('site', {}).get('organization', '') }}"
+                >
+            </div>
+
+            <div>
+                <label>Site Name</label>
+
+                <input
+                    name="site_name"
+                    value="{{ node.get('site', {}).get('name', '') }}"
+                >
+            </div>
+
+
+            <div class="full">
+
+                <label>Street Address</label>
+
+                <input
+                    id="street"
+                    name="street"
+                    value="{{ node.get('site', {}).get('address', {}).get('street', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>City</label>
+
+                <input
+                    id="city"
+                    name="city"
+                    value="{{ node.get('site', {}).get('address', {}).get('city', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>State</label>
+
+                <input
+                    id="state"
+                    name="state"
+                    value="{{ node.get('site', {}).get('address', {}).get('state', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Postal Code</label>
+
+                <input
+                    id="postal_code"
+                    name="postal_code"
+                    value="{{ node.get('site', {}).get('address', {}).get('postal_code', '') }}"
+                >
+
+            </div>
+
+
+            <div class="full">
+
+                <button
+                    type="button"
+                    onclick="findLocation()"
+                >
+                    Find Location
+                </button>
+
+                <span id="location_status"></span>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- COORDINATES -->
+            <!-- ================================= -->
+
+            <div>
+
+                <label>Latitude</label>
+
+                <input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    name="latitude"
+                    value="{{ node.get('site', {}).get('latitude', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Longitude</label>
+
+                <input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    name="longitude"
+                    value="{{ node.get('site', {}).get('longitude', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Elevation</label>
+
+                <input
+                    id="elevation"
+                    type="number"
+                    step="any"
+                    name="elevation"
+                    value="{{ node.get('site', {}).get('elevation', '') }}"
+                >
+
+            </div>
+
+
+            <div class="full">
+
+                <label>Location Description</label>
+
+                <textarea
+                    name="location_description"
+                >{{ node.get('site', {}).get('location_description', '') }}</textarea>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================== -->
+        <!-- MAP -->
+        <!-- ===================================== -->
+
+        <div id="map"></div>
+
+        <p class="map-help">
+            Click the map to place the node, or drag the marker.
+            The latitude and longitude fields will update automatically.
+        </p>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- OWNERSHIP / FUNDING -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Ownership &amp; Funding</h2>
+
+        <div class="grid">
+
+            <div>
+
+                <label>Device Owner</label>
+
+                <input
+                    name="device_owner"
+                    value="{{ node.get('ownership', {}).get('device_owner', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Funding Source</label>
+
+                <input
+                    name="funding_source"
+                    value="{{ node.get('ownership', {}).get('funding_source', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Project</label>
+
+                <input
+                    name="project"
+                    value="{{ node.get('ownership', {}).get('project', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Award / Project ID</label>
+
+                <input
+                    name="award_id"
+                    value="{{ node.get('ownership', {}).get('award_id', '') }}"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- PRIMARY CONTACT -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Primary Site Contact</h2>
+
+        <div class="grid">
+
+            <div>
+
+                <label>Name</label>
+
+                <input
+                    name="primary_name"
+                    value="{{ node.get('contacts', {}).get('primary', {}).get('name', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Organization</label>
+
+                <input
+                    name="primary_organization"
+                    value="{{ node.get('contacts', {}).get('primary', {}).get('organization', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Email</label>
+
+                <input
+                    type="email"
+                    name="primary_email"
+                    value="{{ node.get('contacts', {}).get('primary', {}).get('email', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Phone</label>
+
+                <input
+                    name="primary_phone"
+                    value="{{ node.get('contacts', {}).get('primary', {}).get('phone', '') }}"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- TECHNICAL CONTACT -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Technical Contact</h2>
+
+        <div class="grid">
+
+            <div>
+
+                <label>Name</label>
+
+                <input
+                    name="technical_name"
+                    value="{{ node.get('contacts', {}).get('technical', {}).get('name', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Organization</label>
+
+                <input
+                    name="technical_organization"
+                    value="{{ node.get('contacts', {}).get('technical', {}).get('organization', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Email</label>
+
+                <input
+                    type="email"
+                    name="technical_email"
+                    value="{{ node.get('contacts', {}).get('technical', {}).get('email', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Phone</label>
+
+                <input
+                    name="technical_phone"
+                    value="{{ node.get('contacts', {}).get('technical', {}).get('phone', '') }}"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- DEPLOYMENT -->
+    <!-- ========================================= -->
+
+    <div class="section">
+
+        <h2>Deployment</h2>
+
+        <div class="grid">
+
+            <div>
+
+                <label>Lifecycle Status</label>
+
+                <select name="lifecycle_status">
+
+                    {% for status in [
+                        'REGISTERED',
+                        'TESTED',
+                        'READY',
+                        'DEPLOYED'
+                    ] %}
+
+                    <option
+                        value="{{ status }}"
+                        {% if node.get('lifecycle', {}).get('status', 'REGISTERED') == status %}
+                        selected
+                        {% endif %}
+                    >
+                        {{ status }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label>Deployment Status</label>
+
+                <select name="deployment_status">
+
+                    {% for status in [
+                        'PLANNED',
+                        'SCHEDULED',
+                        'DEPLOYED'
+                    ] %}
+
+                    <option
+                        value="{{ status }}"
+                        {% if node.get('deployment', {}).get('status', 'PLANNED') == status %}
+                        selected
+                        {% endif %}
+                    >
+                        {{ status }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label>Planned Deployment Date</label>
+
+                <input
+                    type="date"
+                    name="planned_date"
+                    value="{{ node.get('deployment', {}).get('planned_date', '') }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Actual Deployment Date</label>
+
+                <input
+                    type="date"
+                    name="deployed_at"
+                    value="{{ node.get('deployment', {}).get('deployed_at', '') }}"
+                >
+
+            </div>
+
+
+            <div class="full">
+
+                <label>Installer</label>
+
+                <input
+                    name="installer"
+                    value="{{ node.get('deployment', {}).get('installer', '') }}"
+                >
+
+            </div>
+
+
+            <div class="full">
+
+                <label>Installation Description</label>
+
+                <textarea
+                    name="installation_description"
+                >{{ node.get('deployment', {}).get('installation_description', '') }}</textarea>
+
+            </div>
+
+
+            <div class="full">
+
+                <label>Notes</label>
+
+                <textarea
+                    name="notes"
+                >{{ node.get('deployment', {}).get('notes', '') }}</textarea>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <button type="submit">
+        Save Registration
+    </button>
+
+
+</form>
+
+
+{% else %}
+
+
+<!-- ============================================= -->
+<!-- NODE SELECTION -->
+<!-- ============================================= -->
+
+<div class="section">
+
+    <h2>Select Node</h2>
+
+    {% for id, item in nodes.items() %}
+
+        <p>
+
+            <a href="{{ url_for('register', node_id=id) }}">
+                {{ id }}
+            </a>
+
+        </p>
+
+    {% endfor %}
+
+</div>
+
+
+{% endif %}
+
+
+{% if node %}
+
+<script>
+
+/*
+ * ==================================================
+ * UCM REGISTRATION MAP
+ * ==================================================
+ *
+ * The saved registry coordinates are the initial
+ * source of truth.
+ *
+ * There is NO hard-coded map location.
+ *
+ * If no coordinates exist yet, the map starts at
+ * a reasonable Jersey City fallback only so that
+ * the user has a map on which to select a location.
+ *
+ * Once the marker is moved or the address is found,
+ * the latitude/longitude form fields are updated.
+ *
+ * The form fields are submitted with the POST.
+ * ==================================================
+ */
+
+
+/* ----------------------------------------------
+   Map state
+   ---------------------------------------------- */
+
+let map = null;
+let marker = null;
+
+
+/* ----------------------------------------------
+   Read coordinates already stored in registry
+   ---------------------------------------------- */
+
+const savedLatitude =
+    {{ node.get('site', {}).get('latitude', None) | tojson }};
+
+const savedLongitude =
+    {{ node.get('site', {}).get('longitude', None) | tojson }};
+
+
+/* ----------------------------------------------
+   DOM helpers
+   ---------------------------------------------- */
+
+function getLatitudeField() {
+
+    return document.getElementById("latitude");
+
+}
+
+
+function getLongitudeField() {
+
+    return document.getElementById("longitude");
+
+}
+
+
+/* ----------------------------------------------
+   Update coordinate form fields
+   ---------------------------------------------- */
+
+function updateCoordinateFields(lat, lon) {
+
+    const latitudeField =
+        getLatitudeField();
+
+    const longitudeField =
+        getLongitudeField();
+
+
+    if (!latitudeField || !longitudeField) {
+
+        console.error(
+            "Coordinate fields not found."
+        );
+
+        return;
+
+    }
+
+
+    latitudeField.value =
+        Number(lat).toFixed(7);
+
+    longitudeField.value =
+        Number(lon).toFixed(7);
+
+
+    /*
+     * Fire change events so any future code
+     * listening for changes will also see them.
+     */
+
+    latitudeField.dispatchEvent(
+        new Event("change", {
+            bubbles: true
+        })
+    );
+
+    longitudeField.dispatchEvent(
+        new Event("change", {
+            bubbles: true
+        })
+    );
+
+
+    console.log(
+        "Coordinates updated:",
+        latitudeField.value,
+        longitudeField.value
+    );
+
+}
+
+
+/* ----------------------------------------------
+   Read coordinates from form
+   ---------------------------------------------- */
+
+function getFormCoordinates() {
+
+    const latitude =
+        parseFloat(
+            getLatitudeField().value
+        );
+
+    const longitude =
+        parseFloat(
+            getLongitudeField().value
+        );
+
+
+    if (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude)
+    ) {
+
+        return {
+            lat: latitude,
+            lon: longitude
+        };
+
+    }
+
+
+    return null;
+
+}
+
+
+/* ----------------------------------------------
+   Create or move marker
+   ---------------------------------------------- */
+
+function placeMarker(lat, lon) {
+
+    lat = Number(lat);
+    lon = Number(lon);
+
+
+    if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+    ) {
+
+        console.error(
+            "Invalid coordinates:",
+            lat,
+            lon
+        );
+
+        return;
+
+    }
+
+
+    if (!marker) {
+
+        marker =
+            L.marker(
+                [lat, lon],
+                {
+                    draggable: true
+                }
+            ).addTo(map);
+
+
+        marker.on(
+            "dragend",
+            function(event) {
+
+                const position =
+                    event.target.getLatLng();
+
+
+                updateCoordinateFields(
+                    position.lat,
+                    position.lng
+                );
+
+            }
+        );
+
+    }
+
+    else {
+
+        marker.setLatLng(
+            [lat, lon]
+        );
+
+    }
+
+
+    updateCoordinateFields(
+        lat,
+        lon
+    );
+
+
+    /*
+     * Keep the map centered on the selected
+     * installation location.
+     */
+
+    map.setView(
+        [lat, lon],
+        map.getZoom()
+    );
+
+}
+
+
+/* ----------------------------------------------
+   Initialize map
+   ---------------------------------------------- */
+
+function initializeMap() {
+
+    let coordinates =
+        getFormCoordinates();
+
+
+    /*
+     * The form contains the saved registry
+     * coordinates. Use those first.
+     */
+
+    let lat;
+    let lon;
+
+
+    if (coordinates) {
+
+        lat =
+            coordinates.lat;
+
+        lon =
+            coordinates.lon;
+
+    }
+
+    else if (
+        Number.isFinite(savedLatitude) &&
+        Number.isFinite(savedLongitude)
+    ) {
+
+        lat =
+            savedLatitude;
+
+        lon =
+            savedLongitude;
+
+
+        /*
+         * Make absolutely sure the form reflects
+         * the registry values.
+         */
+
+        updateCoordinateFields(
+            lat,
+            lon
+        );
+
+    }
+
+    else {
+
+        /*
+         * No location has been registered yet.
+         *
+         * This is ONLY a visual starting position.
+         * It is NOT saved until the user selects
+         * a location.
+         */
+
+        lat = 40.71822;
+        lon = -74.04851;
+
+    }
+
+
+    map =
+        L.map("map").setView(
+            [lat, lon],
+            17
+        );
+
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
+            attribution:
+                "&copy; OpenStreetMap contributors"
+        }
+    ).addTo(map);
+
+
+    /*
+     * Put marker at the actual selected location.
+     *
+     * If there was no saved location, this marker
+     * represents the initial selection position.
+     */
+
+    placeMarker(
+        lat,
+        lon
+    );
+
+
+    /* ------------------------------------------
+       Map click
+       ------------------------------------------ */
+
+    map.on(
+        "click",
+        function(event) {
+
+            placeMarker(
+                event.latlng.lat,
+                event.latlng.lng
+            );
+
+        }
+    );
+
+
+    /*
+     * Leaflet sometimes needs an explicit size
+     * recalculation when loaded inside a form.
+     */
+
+    setTimeout(
+        function() {
+
+            map.invalidateSize();
+
+        },
+        100
+    );
+
+}
+
+
+/* ----------------------------------------------
+   Address lookup
+   ---------------------------------------------- */
+
+async function findLocation() {
+
+    const street =
+        document.getElementById(
+            "street"
+        ).value.trim();
+
+
+    const city =
+        document.getElementById(
+            "city"
+        ).value.trim();
+
+
+    const state =
+        document.getElementById(
+            "state"
+        ).value.trim();
+
+
+    const postal =
+        document.getElementById(
+            "postal_code"
+        ).value.trim();
+
+
+    const status =
+        document.getElementById(
+            "location_status"
+        );
+
+
+    if (
+        !street ||
+        !city ||
+        !state
+    ) {
+
+        status.textContent =
+            "Please enter street, city, and state.";
+
+        return;
+
+    }
+
+
+    const address =
+        `${street}, ${city}, ${state} ${postal}`;
+
+
+    status.textContent =
+        "Looking up address...";
+
+
+    try {
+
+        const url =
+            "https://nominatim.openstreetmap.org/search" +
+            "?format=json" +
+            "&limit=1" +
+            "&q=" +
+            encodeURIComponent(address);
+
+
+        const response =
+            await fetch(url);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Geocoding request failed"
+            );
+
+        }
+
+
+        const results =
+            await response.json();
+
+
+        if (!results.length) {
+
+            status.textContent =
+                "Address not found.";
+
+            return;
+
+        }
+
+
+        const result =
+            results[0];
+
+
+        const lat =
+            parseFloat(result.lat);
+
+
+        const lon =
+            parseFloat(result.lon);
+
+
+        /*
+         * Address lookup changes the marker AND
+         * the form coordinates.
+         */
+
+        placeMarker(
+            lat,
+            lon
+        );
+
+
+        status.textContent =
+            "Location found. Adjust the marker if necessary.";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Geocoding error:",
+            error
+        );
+
+
+        status.textContent =
+            "Unable to look up address.";
+
+    }
+
+}
+
+
+/* ----------------------------------------------
+   Start application
+   ---------------------------------------------- */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        initializeMap();
+
+    }
+);
+
+</script>
+
+{% endif %}
+
+</body>
+
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>UCM Node Registration</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .node {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 18px;
+            margin: 12px 0;
+        }
+
+        .node a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 14px;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .node a:hover {
+            background: #555;
+        }
+
+        .node-id {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .status {
+            margin-top: 6px;
+            color: #666;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>UCM Node Registration</h1>
+
+    <p>
+        Select a node to view or complete its registration information.
+    </p>
+
+    {% if nodes %}
+
+        {% for node_id, node in nodes.items() %}
+
+            <div class="node">
+
+                <div class="node-id">
+                    {{ node_id }}
+                </div>
+
+                <div class="status">
+
+                    Runtime status:
+                    {{ node.get('runtime', {}).get('status', 'UNKNOWN') }}
+
+                    <br>
+
+                    Lifecycle status:
+                    {{ node.get('lifecycle', {}).get('status', 'UNKNOWN') }}
+
+                </div>
+
+                <a href="{{ url_for('register', node_id=node_id) }}">
+                    Open Registration
+                </a>
+
+            </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            No registered nodes found.
+        </p>
+
+    {% endif %}
+
+</div>
+
+</body>
+
+</html>

@@ -83,5 +83,13 @@
     "lat": 40.645,
     "lon": -74.012,
     "label": "Sunset Park (BK)"
+  },
+  "UCM-E0A8DC": {
+    "label": "My Office",
+    "description": "test",
+    "lat": 40.71822,
+    "lon": -74.04851,
+    "first_seen": "2026-08-13T20:36:28.433819+00:00",
+    "last_seen": "2026-08-14T21:30:25.867922+00:00"
   }
 }
