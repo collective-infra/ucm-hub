@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 # Replays recorded readings from a pg_dump of the sn3 Timescale database
 # (environment_readings + sensors), turned back into the payloads the
 # firmware publishes, so the site can be tried against real data without
-# being on the mesh. The dump has no heartbeats, so none are replayed.
+# being on the mesh.
 
 log = logging.getLogger(__name__)
 

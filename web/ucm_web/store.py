@@ -10,7 +10,10 @@ from datetime import datetime, timezone
 # flat however long the server runs and however fast nodes publish.
 # Everything here is thread-safe: MQTT callbacks write while web threads read.
 
-KINDS = ("environment", "heartbeat", "info", "status")
+# Heartbeats are not kept: they only said when a node was last active,
+# which the time of its latest environment reading already shows, and the
+# current firmware no longer sends them.
+KINDS = ("environment", "info", "status")
 
 NODE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 

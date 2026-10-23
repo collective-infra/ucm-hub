@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 
 TOPICS = [
     ("ucm/+/environment", 0),
-    ("ucm/+/heartbeat", 0),
     ("ucm/+/info", 0),
     ("ucm/+/status", 0),
 ]
