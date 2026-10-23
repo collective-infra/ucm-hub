@@ -12,6 +12,9 @@ python3 -m venv .venv
 # Fake nodes, works anywhere
 UCM_MOCK=1 .venv/bin/python run.py
 
+# Recorded readings from a pg_dump of the sn3 Timescale DB (dumps are gitignored)
+UCM_REPLAY=../nycmesh/meshroom-vm-oct-12-a.sql UCM_REPLAY_SPEED=60 .venv/bin/python run.py
+
 # Real broker (nyit-ucm.nycmesh.net only resolves on the mesh)
 .venv/bin/python run.py
 ```
@@ -28,6 +31,7 @@ web/
 │   ├── store.py            thread-safe latest-value store with size limits
 │   ├── mqtt_source.py      MQTT subscriber (auto-reconnect, never crashes on bad messages)
 │   ├── mock_source.py      fake nodes at a configurable rate
+│   ├── replay_source.py    replays environment_readings + sensors from a DB dump
 │   ├── app.py              Flask routes: /, /api/raw, /healthz
 │   └── static/index.html   the page
 └── tests/
@@ -43,6 +47,8 @@ web/
 | `UCM_MQTT_USER` / `UCM_MQTT_PASSWORD` | unset | Anonymous is allowed temporarily by the broker ACL |
 | `UCM_MOCK` | unset | `1` generates fake readings instead of using MQTT |
 | `UCM_MOCK_NODES` / `UCM_MOCK_HZ` | `15` / `1` | Fake node count and messages per second per node |
+| `UCM_REPLAY` | unset | Path to a `.sql` dump to replay as firmware-shaped payloads (no heartbeats; the DB has none) |
+| `UCM_REPLAY_SPEED` / `UCM_REPLAY_MAX_GAP` | `1` / `5` | Playback speed, and the longest pause between readings in seconds |
 | `UCM_WEB_HOST` / `UCM_WEB_PORT` | `127.0.0.1` / `5002` | Use `0.0.0.0` to serve other machines |
 | `UCM_WEB_THREADS` | `8` | waitress worker threads |
 | `UCM_MAX_NODES` / `UCM_MAX_PAYLOAD_BYTES` | `200` / `4096` | Messages beyond these are dropped and counted |

@@ -4,6 +4,7 @@ UCM raw sensor feed.
 
     .venv/bin/python run.py                 # real broker (must be on the mesh)
     UCM_MOCK=1 .venv/bin/python run.py      # fake nodes, no broker needed
+    UCM_REPLAY=dump.sql .venv/bin/python run.py   # recorded readings from a DB dump
 
 Then open http://localhost:5002
 """
@@ -12,7 +13,7 @@ import logging
 
 from waitress import serve
 
-from ucm_web import mock_source, mqtt_source
+from ucm_web import mock_source, mqtt_source, replay_source
 from ucm_web.app import create_app
 from ucm_web.config import Config
 from ucm_web.store import LatestStore
@@ -34,6 +35,8 @@ def main():
 
     if config.mock:
         mock_source.start(config, store)
+    elif config.replay_path:
+        replay_source.start(config, store)
     else:
         mqtt_source.start(config, store)
 

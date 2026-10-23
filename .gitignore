@@ -42,3 +42,6 @@ UCM-collector-server/
 .idea/
 *.swp
 .DS_Store
+
+# --- Database dumps (real sensor data) ---
+*.sql

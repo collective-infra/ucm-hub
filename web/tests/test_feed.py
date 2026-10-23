@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ucm_web import mqtt_source  # noqa: E402
+from ucm_web import mqtt_source, replay_source  # noqa: E402
 from ucm_web.app import create_app  # noqa: E402
 from ucm_web.config import Config  # noqa: E402
 from ucm_web.store import LatestStore  # noqa: E402
@@ -122,6 +122,43 @@ def test_mqtt_on_message_never_raises():
     client.on_message(client, None, object())
 
     assert store.stats()["nodes"] == 1
+
+
+# ---------------- REPLAY ----------------
+
+DUMP = """\
+COPY _timescaledb_internal._hyper_1_1_chunk ("time", node_id, temperature_c, humidity_percent, pm1, pm25, pm10, voc, received_at, pm4) FROM stdin;
+2026-09-22 16:39:14-04\tUCM-A\t21\t46.8\t1.4\t1.5\t1.6\t28\t2026-09-22 16:39:14.1-04\t1.6
+2026-09-22 16:39:13-04\tUCM-A\t20.5\t46.8\t1.4\t1.5\t1.6\t28\t2026-09-22 16:39:14.1-04\t\\N
+\\.
+COPY public.environment_readings ("time", node_id, temperature_c, humidity_percent, pm1, pm25, pm10, voc, received_at, pm4) FROM stdin;
+2026-09-22 16:39:14-04\tUCM-A\t21\t46.8\t1.4\t1.5\t1.6\t28\t2026-09-22 16:39:14.1-04\t1.6
+\\.
+COPY public.sensors (node_id, display_name, lat, lon, contact_point, created_at) FROM stdin;
+UCM-A\tMesh Room Roof\t40.7\t-73.9\tslack\t2026-10-02 01:36:49-04
+\\.
+"""
+
+
+def test_replay_parses_dump(tmp_path):
+
+    path = tmp_path / "dump.sql"
+    path.write_text(DUMP)
+
+    readings, sensors = replay_source.parse_dump(path)
+
+    assert len(readings) == 2
+    assert readings[0][0] < readings[1][0]
+    assert sensors[0]["display_name"] == "Mesh Room Roof"
+
+    payload = json.loads(replay_source.environment_payload(*readings[0]))
+    assert payload == {"node": "UCM-A", "timestamp": "2026-09-22T20:39:13Z", "pm1": 1.4,
+                       "pm25": 1.5, "pm4": None, "pm10": 1.6, "temperature": 20.5,
+                       "humidity": 46.8, "voc": 28}
+
+    store = LatestStore()
+    store.record("ucm/node-UCM-A/environment", replay_source.environment_payload(*readings[1]))
+    assert store.stats()["accepted"] == 1
 
 
 # ---------------- WEB APP ----------------
