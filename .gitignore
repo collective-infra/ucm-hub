@@ -1,0 +1,43 @@
+# --- SSH keys / certificates ---
+ucm-hub-key
+ucm-hub-key.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.key
+*.pem
+*.crt
+
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+*.private
+*.ignore
+secrets.*
+!secrets.*.example
+credentials*
+mosquitto/passwd
+*.passwd
+
+# --- Backups ---
+*.bak
+*.tmp
+
+# --- Python ---
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# --- Separate repos cloned alongside this one ---
+ucm-node/
+UCM-collector-server/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
