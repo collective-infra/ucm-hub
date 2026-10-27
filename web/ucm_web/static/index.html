@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCM Raw Sensor Feed</title>
+    <style>
+        body { font-family: monospace; margin: 16px; background: #fff; color: #111; }
+        h1 { font-size: 18px; }
+        #status { color: #555; margin-bottom: 16px; }
+        .node { border-top: 1px solid #ccc; padding: 8px 0; }
+        .node h2 { font-size: 15px; margin: 4px 0; }
+        .line { margin: 4px 0 4px 16px; white-space: pre-wrap; word-break: break-all; }
+        .kind { font-weight: bold; }
+        .age { color: #777; }
+        .stale { opacity: 0.45; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #111; color: #eee; }
+            #status, .age { color: #aaa; }
+        }
+    </style>
+</head>
+<body>
+    <h1>UCM raw sensor feed</h1>
+    <div id="status">loading...</div>
+    <div id="nodes"></div>
+
+    <script>
+        const KINDS = ["environment", "heartbeat", "info", "status"];
+        const POLL_MS = 2000;
+        const MAX_BACKOFF_MS = 30000;
+        const STALE_SECONDS = 30;
+
+        let etag = null;
+        let nodes = {};
+        let clockSkewMs = 0;   // server clock minus browser clock
+        let failures = 0;
+
+        function ageSeconds(iso) {
+            return Math.max(0, Math.round((Date.now() + clockSkewMs - Date.parse(iso)) / 1000));
+        }
+
+        function ageText(seconds) {
+            if (seconds < 60) return `${seconds}s ago`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            return `${Math.floor(seconds / 3600)}h ago`;
+        }
+
+        // Elements are created once per node/topic and only their text is
+        // updated, so the page never flickers or loses scroll position.
+        function element(id, tag, parent, className) {
+            let el = document.getElementById(id);
+            if (!el) {
+                el = document.createElement(tag);
+                el.id = id;
+                if (className) el.className = className;
+                parent.appendChild(el);
+            }
+            return el;
+        }
+
+        function setText(el, text) {
+            if (el.textContent !== text) el.textContent = text;
+        }
+
+        function nodeName(topics) {
+            try { return topics.info ? JSON.parse(topics.info.payload).name : null; }
+            catch (e) { return null; }
+        }
+
+        // A node is "seen" when it sends a reading or a heartbeat. info and
+        // status are retained messages, so they say nothing about liveness.
+        function lastSeen(topics) {
+            const times = ["environment", "heartbeat"]
+                .filter(kind => topics[kind])
+                .map(kind => ageSeconds(topics[kind].received_at));
+            return times.length ? `last seen ${ageText(Math.min(...times))}` : "not seen yet";
+        }
+
+        function render() {
+            const container = document.getElementById("nodes");
+
+            for (const nodeId of Object.keys(nodes).sort()) {
+                const topics = nodes[nodeId];
+                const block = element(`node-${nodeId}`, "div", container, "node");
+                const name = nodeName(topics);
+                const title = name ? `Node ${nodeId} (${name})` : `Node ${nodeId}`;
+                setText(element(`title-${nodeId}`, "h2", block), `${title}, ${lastSeen(topics)}`);
+
+                for (const kind of KINDS) {
+                    const entry = topics[kind];
+                    if (!entry) continue;
+                    const seconds = ageSeconds(entry.received_at);
+                    const line = element(`line-${nodeId}-${kind}`, "div", block, "line");
+                    line.classList.toggle("stale", kind !== "info" && kind !== "status" && seconds > STALE_SECONDS);
+                    setText(element(`kind-${nodeId}-${kind}`, "span", line, "kind"), `${kind}: `);
+                    setText(element(`age-${nodeId}-${kind}`, "span", line, "age"), `(${ageText(seconds)}) `);
+                    setText(element(`payload-${nodeId}-${kind}`, "span", line), entry.payload);
+                }
+            }
+        }
+
+        // One request at a time: the next poll is scheduled only after the
+        // previous one finishes, and the delay backs off while the server
+        // is unreachable.
+        async function poll() {
+            try {
+                const headers = etag ? { "If-None-Match": etag } : {};
+                const response = await fetch("api/raw", { headers, cache: "no-store" });
+
+                const serverDate = Date.parse(response.headers.get("Date"));
+                if (!Number.isNaN(serverDate)) clockSkewMs = serverDate - Date.now();
+
+                if (response.status === 200) {
+                    etag = response.headers.get("ETag");
+                    const data = await response.json();
+                    nodes = data.nodes;
+                    setText(document.getElementById("status"),
+                        `source: ${data.source} | ${data.status} | ${Object.keys(nodes).length} node(s)`);
+                } else if (response.status !== 304) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                failures = 0;
+            } catch (error) {
+                failures += 1;
+                setText(document.getElementById("status"),
+                    `cannot reach server (${error.message}), retrying...`);
+            }
+
+            render();
+            const delay = Math.min(POLL_MS * 2 ** failures, MAX_BACKOFF_MS);
+            setTimeout(poll, delay);
+        }
+
+        poll();
+    </script>
+</body>
+</html>
