@@ -1,6 +1,6 @@
 # UCM raw sensor feed
 
-A minimal web page that shows the latest raw MQTT payload from every UCM node, as plain text. There is no database: the server subscribes to `ucm/+/environment`, `info` and `status` and keeps only the newest message per node and topic in memory.
+A minimal web page that shows the latest raw MQTT payload from every UCM node, as plain text. There is no database: the server subscribes to `ucm/+/environment`, `heartbeat`, `info` and `status` and keeps only the newest message per node and topic in memory.
 
 ## Run
 
@@ -41,13 +41,15 @@ web/
 
 ## Configuration
 
+Settings come from environment variables or from `web/.env`, which git ignores. Copy [.env.example](.env.example) to `.env` and fill in credentials there; restart `run.py` to pick up changes. A variable set on the command line overrides `.env`.
+
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `UCM_MQTT_HOST` / `UCM_MQTT_PORT` | `nyit-ucm.nycmesh.net` / `1883` | |
 | `UCM_MQTT_USER` / `UCM_MQTT_PASSWORD` | unset | Anonymous is allowed temporarily by the broker ACL |
 | `UCM_MOCK` | unset | `1` generates fake readings instead of using MQTT |
 | `UCM_MOCK_NODES` / `UCM_MOCK_HZ` | `15` / `1` | Fake node count and messages per second per node |
-| `UCM_REPLAY` | unset | Path to a `.sql` dump to replay as firmware-shaped payloads |
+| `UCM_REPLAY` | unset | Path to a `.sql` dump to replay as firmware-shaped payloads (no heartbeats; the DB has none) |
 | `UCM_REPLAY_SPEED` / `UCM_REPLAY_MAX_GAP` | `1` / `5` | Playback speed, and the longest pause between readings in seconds |
 | `UCM_WEB_HOST` / `UCM_WEB_PORT` | `127.0.0.1` / `5002` | Use `0.0.0.0` to serve other machines |
 | `UCM_WEB_THREADS` | `8` | waitress worker threads |

@@ -19,7 +19,7 @@ def mock_node_ids(count):
     return [f"UCM-MOCK{i:02d}" for i in range(1, count + 1)]
 
 
-def publish_once(store, node_ids):
+def publish_once(store, node_ids, started):
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -36,6 +36,14 @@ def publish_once(store, node_ids):
             "temperature": round(random.uniform(18, 24), 1),
             "humidity": round(random.uniform(40, 60), 1),
             "voc": round(random.uniform(90, 120), 1),
+        }).encode())
+
+        store.record(f"ucm/node-{node_id}/heartbeat", json.dumps({
+            "node": node_id,
+            "timestamp": timestamp,
+            "uptime_s": int(time.time() - started),
+            "free_heap": random.randint(180000, 200000),
+            "rssi": random.randint(-75, -50),
         }).encode())
 
 
@@ -56,10 +64,11 @@ def start(config, store):
     )
 
     def run():
-        next_tick = time.time()
+        started = time.time()
+        next_tick = started
         while True:
             try:
-                publish_once(store, node_ids)
+                publish_once(store, node_ids, started)
             except Exception:
                 log.exception("mock tick failed")
             next_tick += interval

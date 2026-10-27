@@ -26,7 +26,7 @@
     <div id="nodes"></div>
 
     <script>
-        const KINDS = ["environment", "info", "status"];
+        const KINDS = ["environment", "heartbeat", "info", "status"];
         const POLL_MS = 2000;
         const MAX_BACKOFF_MS = 30000;
         const STALE_SECONDS = 30;
@@ -68,6 +68,15 @@
             catch (e) { return null; }
         }
 
+        // A node is "seen" when it sends a reading or a heartbeat. info and
+        // status are retained messages, so they say nothing about liveness.
+        function lastSeen(topics) {
+            const times = ["environment", "heartbeat"]
+                .filter(kind => topics[kind])
+                .map(kind => ageSeconds(topics[kind].received_at));
+            return times.length ? `last seen ${ageText(Math.min(...times))}` : "not seen yet";
+        }
+
         function render() {
             const container = document.getElementById("nodes");
 
@@ -76,12 +85,7 @@
                 const block = element(`node-${nodeId}`, "div", container, "node");
                 const name = nodeName(topics);
                 const title = name ? `Node ${nodeId} (${name})` : `Node ${nodeId}`;
-                // A node is "seen" when it sends a reading; info and status
-                // are retained messages, so they say nothing about liveness.
-                const seen = topics.environment
-                    ? `last seen ${ageText(ageSeconds(topics.environment.received_at))}`
-                    : "no readings yet";
-                setText(element(`title-${nodeId}`, "h2", block), `${title}, ${seen}`);
+                setText(element(`title-${nodeId}`, "h2", block), `${title}, ${lastSeen(topics)}`);
 
                 for (const kind of KINDS) {
                     const entry = topics[kind];

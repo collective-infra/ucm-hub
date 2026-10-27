@@ -1,12 +1,39 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+
+DEFAULT_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
+
+def load_env_file(path=DEFAULT_ENV_FILE):
+    """Read KEY=value lines from a .env file into os.environ.
+
+    Variables already set in the environment win, so a one-off override on
+    the command line still works. A missing file is fine.
+    """
+
+    path = Path(path)
+    if not path.is_file():
+        return
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip().removeprefix("export ").strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
 
 
 # ---------------- CONFIG ----------------
 #
-# Every setting comes from an environment variable so that passwords never
-# live in the repo. See web/README.md for the full list.
+# Every setting comes from an environment variable or from web/.env (not
+# tracked by git), so passwords never live in the repo and can be changed
+# without touching code. See .env.example and web/README.md.
 
 @dataclass(frozen=True)
 class Config:
@@ -43,8 +70,9 @@ class Config:
         return f"{self.mqtt_host}:{self.mqtt_port}"
 
     @classmethod
-    def from_env(cls):
+    def from_env(cls, env_file=DEFAULT_ENV_FILE):
 
+        load_env_file(env_file)
         env = os.environ
 
         return cls(

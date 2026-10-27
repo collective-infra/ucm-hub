@@ -28,13 +28,13 @@ def test_keeps_only_latest_per_node_and_kind():
     store = LatestStore()
     store.record("ucm/node-UCM-E0A695/environment", b'{"pm25":1}')
     store.record("ucm/node-UCM-E0A695/environment", b'{"pm25":2}')
-    store.record("ucm/node-UCM-E0A695/info", b'{}')
+    store.record("ucm/node-UCM-E0A695/heartbeat", b'{}')
 
     nodes = json.loads(store.body("test")[1])["nodes"]
 
     assert list(nodes) == ["UCM-E0A695"]
     assert nodes["UCM-E0A695"]["environment"]["payload"] == '{"pm25":2}'
-    assert set(nodes["UCM-E0A695"]) == {"environment", "info"}
+    assert set(nodes["UCM-E0A695"]) == {"environment", "heartbeat"}
 
 
 def test_drops_bad_topics():
@@ -42,7 +42,7 @@ def test_drops_bad_topics():
     store = LatestStore()
 
     for topic in ["ucm/node-X/unknown", "other/node-X/environment", "ucm/X/environment",
-                  "ucm/node-/environment", "ucm/node-a/b/environment", "ucm/node-X/heartbeat",
+                  "ucm/node-/environment", "ucm/node-a/b/environment",
                   "ucm/node-" + "x" * 100 + "/environment", "ucm/node-<script>/info"]:
         assert store.record(topic, ENV) == "dropped_bad_topic", topic
 
@@ -159,6 +159,24 @@ def test_replay_parses_dump(tmp_path):
     store = LatestStore()
     store.record("ucm/node-UCM-A/environment", replay_source.environment_payload(*readings[1]))
     assert store.stats()["accepted"] == 1
+
+
+# ---------------- CONFIG ----------------
+
+def test_env_file_is_read_but_real_env_wins(tmp_path, monkeypatch):
+
+    env_file = tmp_path / ".env"
+    env_file.write_text('# comment\nUCM_MQTT_USER=site\nexport UCM_MQTT_PASSWORD="p=w"\n'
+                        'UCM_WEB_PORT=6000\n')
+    for key in ("UCM_MQTT_USER", "UCM_MQTT_PASSWORD"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("UCM_WEB_PORT", "7000")
+
+    config = Config.from_env(env_file)
+
+    assert config.mqtt_user == "site"
+    assert config.mqtt_password == "p=w"
+    assert config.web_port == 7000
 
 
 # ---------------- WEB APP ----------------
